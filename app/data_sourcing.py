@@ -63,13 +63,13 @@ class Data_Sourcing:
                                                 '1 Day':'1d', '1 Week':'1wk', '1 Month':'1mo'}, 
                             'Binance': {'1 Minute':'1m', '3 Minute':'3m', '5 Minute':'5m', '15 Minute':'15m', '30 Minute':'30m', 
                                         '1 Hour':'1h', '6 Hour':'6h', '12 Hour':'12h', '1 Day':'1d', '1 Week':'1w', '1 Month':'1M'}}
-        
+
         self.exchange_interval = exchange_interval[self.exchange][self.selected_interval]
-        
+
         if self.exchange == 'Yahoo! Finance':
             if self.selected_interval == '1 Minute':
                 self.period = '7d'
-            elif self.selected_interval == '5 Minute' or self.selected_interval == '15 Minute' or self.selected_interval == '30 Minute':
+            elif self.selected_interval in ['5 Minute', '15 Minute', '30 Minute']:
                 self.period = '1mo'
             elif self.selected_interval == '1 Hour':
                 self.period = '2y'
@@ -78,19 +78,19 @@ class Data_Sourcing:
                     
     def apis(self, asset):
         self.asset = asset
-        limit = 600
-        
         if self.exchange != 'Yahoo! Finance':
             self.ticker_market = self.df_crypto[((self.df_crypto['Currency'] == self.asset) & 
                  (self.df_crypto['Market'] == self.market))][f'{self.exchange} Pair'].values[0]
             self.currency = self.markets
             if self.exchange == 'Binance':
+                limit = 600
+
                 url = f"https://api.binance.com/api/v3/klines?symbol={self.ticker_market}&interval={self.exchange_interval}&limit={limit}"
                 self.df = pd.DataFrame(json.loads(requests.get(url).text))
                 self.df.columns = ['open_time', 'Open', 'High', 'Low', 'Adj Close', 'Volume', 'close_time', 
                                 'quoted average volume', 'num_trades', 'taker_base_vol', 'taker_quote_vol', 'ignore']
                 self.df['Date'] = [dt.datetime.fromtimestamp(x/1000.0).replace(microsecond = 0) for x in self.df.open_time]
-                
+
         else:
             try:
                 self.ticker = self.df_stocks[((self.df_stocks['Company'] == self.asset) & (self.df_stocks['Index Fund'] == self.market))]['Ticker'].values[0]
@@ -104,12 +104,12 @@ class Data_Sourcing:
                         self.ticker = self.df_futures[(self.df_futures['Futures'] == self.asset)]['Ticker'].values[0]
                     except:
                         self.ticker = self.df_forex[(self.df_forex['Currencies'] == self.asset)]['Ticker'].values[0]
-                    
+
             self.df = yf.download(tickers = self.ticker, period = self.period, interval = self.exchange_interval, 
                                   auto_adjust = True, prepost = True, threads = True, proxy = None).reset_index()
             self.df = self.df.rename(columns = {'Datetime':'Date', 'Close': 'Adj Close'})
             self.df = self.df.iloc[-750:]
-            
+
         self.df['Date'] = date_utc(self.df['Date'])
         self.df.set_index('Date', inplace = True)
         self.df = self.df[['High', 'Low', 'Open', 'Volume', 'Adj Close']].apply(pd.to_numeric)

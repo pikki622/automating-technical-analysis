@@ -21,7 +21,7 @@ def main(app_data):
         app_data.exchange_data(exchange)
 
         if asset == 'Stocks':
-            st.sidebar.subheader(f'Stock Index:')
+            st.sidebar.subheader('Stock Index:')
             stock_indexes  = app_data.stock_indexes
             market = st.sidebar.selectbox('', stock_indexes, index = 10)
             app_data.market_data(market)
@@ -33,7 +33,7 @@ def main(app_data):
             assets = app_data.futures
         elif asset == 'Forex':
             assets = app_data.forex
-        
+
         st.sidebar.subheader(f'{asset}:')
         equity = st.sidebar.selectbox('', assets)
 
@@ -49,7 +49,7 @@ def main(app_data):
         elif asset == f'{market} Companies':
             currency = app_data.df_stocks[((app_data.df_stocks['Company'] == equity) & (app_data.df_stocks['Index Fund'] == market))]['Currency'].unique()[0]
             asset = 'Stock'
-        
+
         st.sidebar.subheader('Interval:')
         interval = st.sidebar.selectbox('', ('5 Minute', '15 Minute', '30 Minute', '1 Hour', '1 Day', '1 Week'), index = 4)
         volitility_index = 0     
@@ -58,13 +58,13 @@ def main(app_data):
         exchange = 'Binance'
         app_data.exchange_data(exchange)
         markets = app_data.markets
-        
+
         st.sidebar.subheader('Market:')
         market = st.sidebar.selectbox('', markets, index = 1)
         app_data.market_data(market)
         assets = app_data.assets
         currency = app_data.currency
-        
+
         st.sidebar.subheader('Crypto:')
         equity = st.sidebar.selectbox('', assets)
 
@@ -72,17 +72,17 @@ def main(app_data):
         interval = st.sidebar.selectbox('', ('1 Minute', '3 Minute', '5 Minute', '15 Minute', '30 Minute', '1 Hour', '6 Hour', '12 Hour', '1 Day', '1 Week'), index = 2)
 
         volitility_index = 2 
-        
+
     label = asset
-        
+
     st.sidebar.subheader('Trading Volatility:')
     risk = st.sidebar.selectbox('', ('Low', 'Medium', 'High'), index = volitility_index)
 
-    st.title(f'Automated Technical Analysis.')
+    st.title('Automated Technical Analysis.')
     st.subheader(f'{label} Data Sourced from {exchange}.')
-    st.info(f'Predicting...')
-    
-    future_price = 1   
+    st.info('Predicting...')
+
+    future_price = 1
     analysis = Visualization(exchange, interval, equity, indication, action_model, price_model, market)
     analysis_day = Indications(exchange, '1 Day', equity, market)
     requested_date = analysis.df.index[-1]
@@ -105,10 +105,10 @@ def main(app_data):
         change_display = 'UNCH'
 
     if exchange == 'Yahoo! Finance':
-        current_price = f'{float(current_price):,.2f}'
-        requested_prediction_price = f'{float(requested_prediction_price):,.2f}'
-        buy_price = f'{float(buy_price):,.2f}'
-        sell_price = f'{float(sell_price):,.2f}'
+        current_price = f'{current_price:,.2f}'
+        requested_prediction_price = f'{requested_prediction_price:,.2f}'
+        buy_price = f'{buy_price:,.2f}'
+        sell_price = f'{sell_price:,.2f}'
     else:
         current_price = f'{float(current_price):,.8f}'
         requested_prediction_price = f'{float(requested_prediction_price):,.8f}'
@@ -121,18 +121,15 @@ def main(app_data):
     else:
         present_statement_prefix = ''
         present_statement_suffix = ''
-                
-    accuracy_threshold = {analysis.score_action: 75., analysis.score_price: 75.}
-    confidence = dict()
-    for score, threshold in accuracy_threshold.items():
-        if float(score) >= threshold:
-            confidence[score] = f'*({score}% confident)*'
-        else:
-            confidence[score] = ''
 
+    accuracy_threshold = {analysis.score_action: 75., analysis.score_price: 75.}
+    confidence = {
+        score: f'*({score}% confident)*' if float(score) >= threshold else ''
+        for score, threshold in accuracy_threshold.items()
+    }
     forcast_prefix = int(interval.split()[0]) * future_price
     if forcast_prefix > 1:
-        forcast_suffix = str(interval.split()[1]).lower() + 's'
+        forcast_suffix = f'{str(interval.split()[1]).lower()}s'
     else:
         forcast_suffix = str(interval.split()[1]).lower()
 
@@ -147,11 +144,7 @@ def main(app_data):
         st.markdown(f'**Recommended Trading Margins:** You should consider buying more **{equity}** {label.lower()[:6]} at **{currency} {buy_price}** and sell it at **{currency} {sell_price}**.')
 
     prediction_fig = analysis.prediction_graph(asset)
-    if indication == 'Predicted':
-        testing_prefix = 'Predicted'
-    else:
-        testing_prefix = 'Analysed'
-
+    testing_prefix = 'Predicted' if indication == 'Predicted' else 'Analysed'
     st.success(f'Historical {label[:6]} Price Action...({testing_prefix})')
     st.plotly_chart(prediction_fig, use_container_width = True)
 
